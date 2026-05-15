@@ -26,6 +26,11 @@ setup_psh_test() {
   unset PSH_CODEX_JSONL
   unset PSH_CAPTURE_CODEX_PROMPT
   unset PSH_CAPTURE_CODEX_MODEL
+  unset PSH_INSTALL_DIR
+  unset PSH_INSTALL_NAME
+  unset PSH_RAW_BASE
+  unset PSH_EXPECT_INSTALL_SOURCE
+  unset PSH_INSTALL_SOURCE_FILE
 }
 
 teardown_psh_test() {
@@ -141,6 +146,47 @@ fi
 
 printf '%s\n' "$PSH_MOCK_RESPONSE" >"$out"
 MOCK_CURL
+
+  chmod +x "$PSH_MOCK_BIN/curl"
+}
+
+install_mock_raw_curl() {
+  cat >"$PSH_MOCK_BIN/curl" <<'MOCK_RAW_CURL'
+#!/bin/sh
+
+out=
+url=
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -o)
+      shift
+      out=${1:-}
+      ;;
+    http*)
+      url=$1
+      ;;
+  esac
+
+  shift || break
+done
+
+if [ -n "${PSH_EXPECT_INSTALL_SOURCE:-}" ] && [ "$url" != "$PSH_EXPECT_INSTALL_SOURCE" ]; then
+  printf 'unexpected install source: %s\n' "$url" >&2
+  exit 2
+fi
+
+if [ -z "${PSH_INSTALL_SOURCE_FILE:-}" ]; then
+  printf 'missing PSH_INSTALL_SOURCE_FILE\n' >&2
+  exit 2
+fi
+
+if [ -n "$out" ]; then
+  cp "$PSH_INSTALL_SOURCE_FILE" "$out"
+else
+  cat "$PSH_INSTALL_SOURCE_FILE"
+fi
+MOCK_RAW_CURL
 
   chmod +x "$PSH_MOCK_BIN/curl"
 }

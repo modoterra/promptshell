@@ -9,6 +9,8 @@ usage() {
   printf '       printf %%s "PROMPT" | psh [-v|-vv|-vvv] run\n'
   printf '       psh [-v|-vv|-vvv] setup\n'
   printf '       psh [-v|-vv|-vvv] setup model\n'
+  printf '       psh install\n'
+  printf '       psh uninstall\n'
 }
 
 config_file() {
@@ -20,6 +22,127 @@ require_jq() {
     printf 'psh: jq is required\n' >&2
     exit 2
   fi
+}
+
+resolve_install_dir() {
+  action=$1
+
+  if [ -z "${PSH_INSTALL_DIR:-}" ]; then
+    if [ -z "${HOME:-}" ]; then
+      printf 'psh %s: HOME is required unless PSH_INSTALL_DIR is set\n' "$action" >&2
+      exit 2
+    fi
+
+    printf '%s/.local/bin\n' "$HOME"
+  else
+    printf '%s\n' "$PSH_INSTALL_DIR"
+  fi
+}
+
+resolve_current_script() {
+  case ${0##*/} in
+    psh|psh.sh)
+      if [ -f "$0" ]; then
+        script_dir=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd || printf '')
+        if [ -n "$script_dir" ]; then
+          printf '%s/%s\n' "$script_dir" "$(basename "$0")"
+          return 0
+        fi
+      fi
+
+      script_path=$(command -v "$0" 2>/dev/null || true)
+      if [ -n "$script_path" ] && [ -f "$script_path" ]; then
+        script_dir=$(CDPATH= cd "$(dirname "$script_path")" 2>/dev/null && pwd || printf '')
+        if [ -n "$script_dir" ]; then
+          printf '%s/%s\n' "$script_dir" "$(basename "$script_path")"
+          return 0
+        fi
+      fi
+      ;;
+  esac
+
+  return 1
+}
+
+download_install_source() {
+  destination=$1
+  repo_raw_base=${PSH_RAW_BASE:-https://raw.githubusercontent.com/modoterra/promptshell/main}
+  source_url=$repo_raw_base/bin/psh.sh
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$source_url" -o "$destination"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$destination" "$source_url"
+  else
+    printf 'psh install: curl or wget is required\n' >&2
+    exit 2
+  fi
+}
+
+install_command() {
+  if [ "$#" -gt 0 ]; then
+    usage >&2
+    exit 2
+  fi
+
+  install_dir=$(resolve_install_dir install)
+  install_name=${PSH_INSTALL_NAME:-psh}
+  target=$install_dir/$install_name
+  install_tmp=$(mktemp)
+
+  trap 'rm -f "$install_tmp"' EXIT HUP INT TERM
+
+  source_script=$(resolve_current_script 2>/dev/null || true)
+  if [ -n "$source_script" ]; then
+    cp "$source_script" "$install_tmp"
+  else
+    download_install_source "$install_tmp"
+  fi
+
+  mkdir -p "$install_dir"
+
+  if command -v install >/dev/null 2>&1; then
+    install -m 0755 "$install_tmp" "$target"
+  else
+    cp "$install_tmp" "$target"
+    chmod 0755 "$target"
+  fi
+
+  rm -f "$install_tmp"
+  trap - EXIT HUP INT TERM
+
+  printf 'psh install: installed %s\n' "$target"
+
+  case :$PATH: in
+    *:"$install_dir":*) ;;
+    *)
+      printf 'psh install: add %s to PATH to run `psh` directly\n' "$install_dir"
+      ;;
+  esac
+}
+
+uninstall_command() {
+  if [ "$#" -gt 0 ]; then
+    usage >&2
+    exit 2
+  fi
+
+  install_dir=$(resolve_install_dir uninstall)
+  install_name=${PSH_INSTALL_NAME:-psh}
+  target=$install_dir/$install_name
+
+  if [ -d "$target" ]; then
+    printf 'psh uninstall: expected a file at %s\n' "$target" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$target" ] && [ ! -L "$target" ]; then
+    printf 'psh uninstall: not installed at %s\n' "$target"
+    return 0
+  fi
+
+  rm -f "$target"
+  printf 'psh uninstall: removed %s\n' "$target"
 }
 
 terminal_printf() {
@@ -1447,7 +1570,7 @@ dispatch_command() {
 
   requested_command=$1
   case $requested_command in
-    run|setup|help|-h|--help)
+    run|setup|install|uninstall|help|-h|--help)
       shift
       ;;
     *)
@@ -1461,6 +1584,12 @@ dispatch_command() {
       ;;
     setup)
       setup_command "$@"
+      ;;
+    install)
+      install_command "$@"
+      ;;
+    uninstall)
+      uninstall_command "$@"
       ;;
     -h|--help|help)
       usage

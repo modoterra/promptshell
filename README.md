@@ -13,19 +13,27 @@ printf %s "clean up docker" | psh run
 Install with curl:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/modoterra/promptshell/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/modoterra/promptshell/main/bin/psh.sh | sh -s -- install
 ```
+
+The `-s` flag tells `sh` to read the downloaded script from stdin and pass `install` to `psh`.
 
 Or with wget:
 
 ```sh
-wget -qO- https://raw.githubusercontent.com/modoterra/promptshell/main/install.sh | sh
+wget -qO- https://raw.githubusercontent.com/modoterra/promptshell/main/bin/psh.sh | sh -s -- install
 ```
 
 By default, the installer writes `psh` to `$HOME/.local/bin`. Override the destination with `PSH_INSTALL_DIR`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/modoterra/promptshell/main/install.sh | PSH_INSTALL_DIR=/usr/local/bin sh
+curl -fsSL https://raw.githubusercontent.com/modoterra/promptshell/main/bin/psh.sh | PSH_INSTALL_DIR=/usr/local/bin sh -s -- install
+```
+
+Uninstall the installed `psh` binary:
+
+```sh
+psh uninstall
 ```
 
 ## Requirements

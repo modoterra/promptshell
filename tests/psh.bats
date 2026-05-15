@@ -16,6 +16,45 @@ teardown() {
   assert_status 0
   [[ "$output" == *"usage: psh"* ]]
   [[ "$output" == *"psh [-v|-vv|-vvv] run PROMPT"* ]]
+  [[ "$output" == *"psh install"* ]]
+  [[ "$output" == *"psh uninstall"* ]]
+}
+
+@test "install and uninstall manage psh in the configured directory" {
+  local install_dir=$PSH_TEST_ROOT/install-bin
+
+  run env PSH_INSTALL_DIR="$install_dir" "$PSH_REPO_ROOT/bin/psh.sh" install
+
+  assert_status 0
+  [[ "$output" == *"installed $install_dir/psh"* ]]
+  [ -x "$install_dir/psh" ]
+
+  run "$install_dir/psh" --help
+
+  assert_status 0
+  [[ "$output" == *"usage: psh"* ]]
+
+  run env PSH_INSTALL_DIR="$install_dir" "$install_dir/psh" uninstall
+
+  assert_status 0
+  [[ "$output" == *"removed $install_dir/psh"* ]]
+  [ ! -e "$install_dir/psh" ]
+}
+
+@test "piped script can install with sh -s -- install" {
+  local install_dir=$PSH_TEST_ROOT/pipe-install-bin
+  local raw_base=https://example.test/promptshell
+
+  install_mock_raw_curl
+  export PSH_RAW_BASE=$raw_base
+  export PSH_EXPECT_INSTALL_SOURCE=$raw_base/bin/psh.sh
+  export PSH_INSTALL_SOURCE_FILE=$PSH_REPO_ROOT/bin/psh.sh
+
+  run sh -c 'curl -fsSL "$1" | PSH_INSTALL_DIR="$2" PSH_RAW_BASE="$3" sh -s -- install' sh "$PSH_EXPECT_INSTALL_SOURCE" "$install_dir" "$PSH_RAW_BASE"
+
+  assert_status 0
+  [[ "$output" == *"installed $install_dir/psh"* ]]
+  [ -x "$install_dir/psh" ]
 }
 
 @test "missing API key exits 2 before contacting provider" {

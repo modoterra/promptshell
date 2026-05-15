@@ -7,7 +7,6 @@ deps:
 
 syntax:
 	sh -n bin/psh.sh
-	sh -n install.sh
 	bash -n tests/helpers/psh.bash
 
 test: syntax
@@ -17,4 +16,4 @@ test: syntax
 	$(BATS) tests
 
 install-smoke:
-	PSH_INSTALL_DIR=$$(mktemp -d) sh install.sh
+	install_dir=$$(mktemp -d) && PSH_INSTALL_DIR=$$install_dir sh bin/psh.sh install && test -x "$$install_dir/psh" && PSH_INSTALL_DIR=$$install_dir "$$install_dir/psh" uninstall && test ! -e "$$install_dir/psh"
