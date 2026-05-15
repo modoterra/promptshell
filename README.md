@@ -120,3 +120,13 @@ Run the local installer smoke check:
 ```sh
 make install-smoke
 ```
+
+## Community
+
+- Read `CONTRIBUTING.md` before opening a pull request.
+- Use GitHub Issues for bugs and feature requests.
+- Report security vulnerabilities privately; see `SECURITY.md`.
+
+## License
+
+Prompt Shell is released under the MIT License. See `LICENSE`.
