@@ -94,6 +94,26 @@ Pipe a prompt through stdin:
 printf %s "show ports listening on this machine" | psh run
 ```
 
+More examples:
+
+```sh
+# Inspect the system
+psh run show disk usage by top-level directory
+psh run find files larger than 500 MB under the current directory
+
+# Work with Git
+psh run show commits on this branch that are not on main
+psh run undo the last commit but keep the changes staged
+
+# Compose with other shell commands
+printf %s "list docker containers using the most memory" | psh run
+printf %s "archive all log files older than 30 days" | psh run
+
+# Use implicit run mode
+psh compress all png files in this directory
+psh replace spaces with underscores in filenames here
+```
+
 In an interactive terminal, `psh` previews the generated command and asks for approval. Press `y` to run it. Press Enter, Esc, `n`, or anything else to cancel.
 
 Without a controlling terminal, `psh` prints only the generated command to stdout and does not execute it. This keeps the CLI scriptable:
