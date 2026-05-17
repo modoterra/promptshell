@@ -45,17 +45,27 @@ psh uninstall
 
 ## Setup
 
-Run the interactive setup flow. It asks for a provider and model, including Codex models when `codex` is installed:
+Run the interactive setup flow before your first hosted-provider request:
 
 ```sh
 psh setup
 ```
 
-Change only the configured model later:
+`psh setup` requires an interactive terminal. It asks for:
+
+- Provider: OpenAI, Fireworks, or Codex when `codex` is installed.
+- Model: choose a listed model or enter a custom model.
+- API key: required for OpenAI and Fireworks; not used for Codex.
+
+The setup command saves config to `${XDG_CONFIG_HOME:-$HOME/.config}/psh/config.json` with file mode `600`.
+
+Change only the configured model later without re-entering the provider or API key:
 
 ```sh
 psh setup model
 ```
+
+`psh setup model` requires an existing config from `psh setup`.
 
 You can also configure providers with environment variables:
 
@@ -73,6 +83,8 @@ Provider/model environment variables:
 - `FIREWORKS_API_KEY`, `FIREWORKS_MODEL` for Fireworks.
 - `CODEX_MODEL` for Codex. The model is passed to `codex exec` with `-m`.
 - `PSH_API_KEY`, `PSH_MODEL` as provider-agnostic fallbacks.
+
+Environment variables override saved config for that run.
 
 ## Usage
 
